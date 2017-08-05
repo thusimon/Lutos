@@ -1,0 +1,32 @@
+class FreqTable:
+    def __init__(self):
+        self.freqTable = dict()
+        self.freqTable["g3"] = 196
+        self.freqTable["g3#"] = 208
+        self.freqTable["a3"] = 220
+        self.freqTable["a3#"] = 233
+        self.freqTable["b3"] = 245
+        self.freqTable["c4"] = 262
+        self.freqTable["c4#"] = 277
+        self.freqTable["d4"] = 294
+        self.freqTable["d4#"] = 311
+        self.freqTable["e4"] = 330
+        self.freqTable["f4"] = 349 # half key 19
+        self.freqTable["f4#"] = 370
+        self.freqTable["g4"] = 392
+        self.freqTable["g4#"] = 415
+        self.freqTable["a4"] = 440
+        self.freqTable["a4#"] = 466
+        self.freqTable["b4"] = 494
+        self.freqTable["c5"] = 523
+        self.freqTable["c5#"] = 554
+        self.freqTable["d5"] = 587
+        self.freqTable["d5#"] = 622
+        self.freqTable["e5"] = 659
+        self.freqTable["f5"] = 698
+        self.freqTable["f5#"] = 740
+        self.freqTable["g5"] = 784
+        self.freqTable["g5#"] = 830
+        self.freqTable["a5"] = 880
+        self.freqTable["a5#"] = 932
+        self.freqTable["b5"] = 988
