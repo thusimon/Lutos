@@ -5,8 +5,8 @@ from matplotlib.figure import Figure
 from tkinter import *
 import tkinter.font as tkFont
 import threading
-from violinHelper.Sound.SoundDetector import *
-from violinHelper.Sound.FreqTable import *
+from Sound.SoundDetector import *
+from Sound.FreqTable import *
 
 TimeWindow = 1
 THRESHOLD = 400 # The threshold intensity that defines silence.

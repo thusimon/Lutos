@@ -1,6 +1,6 @@
 import pyaudio
 import numpy as np
-from violinHelper.Sound.SoundAnalysis import FrequencyAnalysis
+from Sound.SoundAnalysis import FrequencyAnalysis
 
 CHUNK = 2048 # The size of the chunk to read from the mic stream
 FORMAT = pyaudio.paInt16 # The format depends on the mic used
@@ -18,6 +18,7 @@ class SoundDetector:
         self.name = "SoundDetector"
         self.audio = None
         self.audiostream = None
+        self.freqAnalyer = FrequencyAnalysis()
 
     def getFreqDomain(self, bufferNum):
         data = self.audiostream.read(bufferNum)
@@ -25,16 +26,14 @@ class SoundDetector:
         audio_data = audio_data.T
         audio_data = audio_data[0:bufferNum]
         #return FrequencyAnalysis.rfft(audio_data)
-        return np.absolute(FrequencyAnalysis.rfft(audio_data))
-
-    def getFreqPower(self, freqData):
-        return FrequencyAnalysis.power(freqData)
+        smooth_audio_data = self.freqAnalyer.windowSmoothing(audio_data, "hamming")
+        return self.freqAnalyer.fftSpecturm(smooth_audio_data)
 
     def listen(self, timewin, win):
         N = RATE * timewin
         while self.switchButton:
             freqData = self.getFreqDomain(N)
-            freqPower = self.getFreqPower(freqData)
+            freqPower = self.freqAnalyer.fftEnergy(freqData)
             '''
             powerMsg = "noise" if (freqPower < THRESHOLD) else str(freqPower)
             clen = len(freqData)
