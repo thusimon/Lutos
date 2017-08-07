@@ -18,54 +18,67 @@ class mainWin:
         self.master = master
         self.soundDetectModule = None
         self.bgthread = None
+        self.pitches = FreqTable()
+        self.noDetect = "--"
         master.title("Audio Frequency analysis")
-        master.geometry('%dx%d+%d+%d' % (1200, 800, 100, 100))
+        master.geometry('%dx%d+%d+%d' % (1200, 700, 100, 100))
+        master.resizable(width=FALSE, height=FALSE)
+        self.create_widgets()
 
-        self.customFont = tkFont.Font(family="Helvetica", size=40)
-        panel1 = PanedWindow(master=master, orient=VERTICAL,relief='groove')
-        panel1.place(x=800, y=10)
-        label1 = Label(panel1, text="E", font=self.customFont).grid(row=0,column=0)
-        self.textvar1 = StringVar()
-        self.textvar1.set("")
-        self.text1 = Entry(panel1, width=10, font=self.customFont, textvariable=self.textvar1)
-        self.text1.grid(row=0,column=1)
+    def create_widgets(self):
+        self.customFont = tkFont.Font(family="Helvetica", size=20)
 
-        label2 = Label(panel1, text="Hz", font=self.customFont).grid(row=1, column=0)
-        self.textvar2 = StringVar()
-        self.textvar2.set("")
-        self.text2 = Entry(panel1, width=10, font=self.customFont, textvariable=self.textvar2)
-        self.text2.grid(row=1, column=1)
+        #add menu
+        menubar = Menu(self.master)
+        actionMenu = Menu(menubar, tearoff=0)
+        actionMenu.add_command(label="Start", command=self.startBtnCallBack)
+        actionMenu.add_command(label="Stop", command=self.stopBtnCallBack)
+        actionMenu.add_separator()
+        actionMenu.add_command(label="Exit", command=self.exitBtnCallBack)
+        menubar.add_cascade(label="Action", menu=actionMenu)
 
-        label3 = Label(panel1, text="Nt", font=self.customFont).grid(row=2, column=0)
-        self.textvar3 = StringVar()
-        self.textvar3.set("")
-        self.text3 = Entry(panel1, width=10, font=self.customFont, textvariable=self.textvar3)
-        self.text3.grid(row=2, column=1)
+        settingMenu = Menu(menubar, tearoff=0)
+        settingMenu.add_command(label="Audio", command=self.audioSettingBtnCallBack)
+        settingMenu.add_command(label="Display", command=self.displaySettingBtnCallBack)
+        menubar.add_cascade(label="Settings", menu=settingMenu)
 
-        label5 = Label(panel1, text="SF", font=self.customFont).grid(row=3, column=0)
-        self.textvar5 = StringVar()
-        self.textvar5.set("")
-        self.text5 = Entry(panel1, width=10, font=self.customFont, textvariable=self.textvar5)
-        self.text5.grid(row=3, column=1)
+        self.master.config(menu=menubar)
 
-        panel2 = PanedWindow(master=master, orient=HORIZONTAL, relief='groove')
-        panel2.place(x=800, y=600)
-        btn1 = Button(panel2, text="Start", command=self.startBtnCallBack, font=self.customFont).grid(row=0, column=0, padx=(0,20))
-        btn2 = Button(panel2, text="Stop", command=self.stopBtnCallBack, font=self.customFont).grid(row=0, column=1, padx=(20,0))
+        # audio statistics display
+        pane1 = PanedWindow(master=self.master)
+        pane1.grid(row=0, column=0, sticky=NSEW)
+        Label(pane1, text="Volume:", font=self.customFont).grid(row=0,column=0)
+        self.volumeTextVar = StringVar()
+        self.volumeTextVar.set("")
+        self.volumeTextEntry = Entry(pane1, width=8, font=self.customFont, textvariable=self.volumeTextVar)
+        self.volumeTextEntry.grid(row=0, column=1)
+        Label(pane1, text="Freq Peak:", font=self.customFont).grid(row=0, column=2,padx=10)
+        self.freqTextVar = StringVar()
+        self.freqTextVar.set("")
+        self.freqTextEntry = Entry(pane1, width=8, font=self.customFont, textvariable=self.freqTextVar)
+        self.freqTextEntry.grid(row=0, column=3)
+        Label(pane1, text="Pitch Name:", font=self.customFont).grid(row=0, column=4,padx=10)
+        self.pitchNTextVar = StringVar()
+        self.pitchNTextVar.set("")
+        self.pitchNTextEntry = Entry(pane1, width=8, font=self.customFont, textvariable=self.pitchNTextVar)
+        self.pitchNTextEntry.grid(row=0, column=5)
+        Label(pane1, text="Pitch Freq:", font=self.customFont).grid(row=0, column=6,padx=10)
+        self.pitchFTextVar = StringVar()
+        self.pitchFTextVar.set("")
+        self.pitchFTextEntry = Entry(pane1, width=10, font=self.customFont, textvariable=self.pitchFTextVar)
+        self.pitchFTextEntry.grid(row=0, column=7)
 
-        panel3 = PanedWindow(master=master, orient=HORIZONTAL, width=600)
-        panel3.place(x=0, y=10)
-        label4 = Label(panel3, text="Frequency Domain", font=tkFont.Font(family="Helvetica", size=18)).grid(row=0, column=0)
-        self.fig = Figure(figsize=(8, 8), dpi=100)
 
-        self.canvas = FigureCanvasTkAgg(self.fig, master=master)
+        pane2 = PanedWindow(master=self.master)
+        pane2.grid(row=1, column=0, sticky=NSEW)
+        self.fig = Figure(figsize=(14, 8), dpi=80, facecolor='w', edgecolor='k')
+        self.fig.text(0.5,0.9,"Audio Spectrum")
+        self.canvas = FigureCanvasTkAgg(self.fig, master=pane2)
         self.canvas.show()
-        self.canvas.get_tk_widget().grid(row=1,column=0, pady=40, sticky="nesw")
+        self.canvas.get_tk_widget().grid(row=0,column=0, sticky=NSEW)
         self.ax = self.fig.add_subplot(111)
         self.ax.set_xlabel('Hz', alpha=0.5)
         self.ax.set_ylabel('Magnitude', alpha=0.5)
-
-        self.notes = FreqTable()
 
     def startBtnCallBack(self):
         print("Start!")
@@ -82,6 +95,16 @@ class mainWin:
             self.soundDetectModule.stop()
             self.soundDetectModule = None
 
+    def exitBtnCallBack(self):
+        print("exit")
+        self.master.quit()
+
+    def audioSettingBtnCallBack(self):
+        print("audio setting")
+
+    def displaySettingBtnCallBack(self):
+        print("display setting")
+
     def processAudio(self):
         if self.soundDetectModule is not None:
             self.soundDetectModule.listen(TimeWindow, self)
@@ -96,8 +119,8 @@ class mainWin:
         maxFreq = np.argmax(freqDataTrim) + cminIdx
         freqMsg = "No Detection" if not updateFlag else str(maxFreq)
         print("UI: Power = " + powerMsg + ", maxFreq = " + str(maxFreq))
-        self.textvar1.set(powerMsg)
-        self.textvar2.set(freqMsg)
+        self.volumeTextVar.set(powerMsg)
+        self.freqTextVar.set(freqMsg)
         self.updateCanvas(range(cminIdx,cmaxIdx),freqDataTrim)
         self.updateNotes(updateFlag, maxFreq)
 
@@ -108,23 +131,23 @@ class mainWin:
 
     def updateNotes(self,updateFlag, maxFreq):
         if not updateFlag:
-            self.textvar3.set("No Detection")
-            self.textvar5.set("No Detection")
-            self.text3.configure(bg="white")
+            self.pitchNTextVar.set(self.noDetect)
+            self.pitchFTextVar.set(self.noDetect)
+            self.pitchNTextEntry.configure(bg="white")
         else:
-            for key, value in self.notes.freqTable.items():
+            for key, value in self.pitches.freqTable.items():
                 if abs(value-maxFreq) <= TOLERANCE:
                     #found the note
-                    self.textvar5.set(str(value))
-                    self.textvar3.set(str(key))
+                    self.pitchFTextVar.set(str(value))
+                    self.pitchNTextVar.set(str(key))
                     if maxFreq > value:
-                        self.text3.configure(bg="red")
+                        self.pitchNTextEntry.configure(bg="red")
                     else:
-                        self.text3.configure(bg="green")
+                        self.pitchNTextEntry.configure(bg="green")
                     return
-            self.textvar3.set("No Detection")
-            self.textvar5.set("No Detection")
-            self.text3.configure(bg="white")
+            self.pitchNTextVar.set(self.noDetect)
+            self.pitchFTextVar.set(self.noDetect)
+            self.pitchNTextEntry.configure(bg="white")
 
 
 if __name__ == '__main__':
