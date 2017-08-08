@@ -16,13 +16,14 @@ class mainWin:
 
     def __init__(self, master):
         self.master = master
-        self.soundDetectModule = None
+        self.soundDetectModule = SoundDetector()
         self.bgthread = None
         self.pitches = FreqTable()
         self.noDetect = "--"
         master.title("Audio Frequency analysis")
         master.geometry('%dx%d+%d+%d' % (1200, 700, 100, 100))
         master.resizable(width=FALSE, height=FALSE)
+        self.master.protocol("WM_DELETE_WINDOW", self.exitBtnCallBack)
         self.create_widgets()
 
     def create_widgets(self):
@@ -68,7 +69,7 @@ class mainWin:
         self.pitchFTextEntry = Entry(pane1, width=10, font=self.customFont, textvariable=self.pitchFTextVar)
         self.pitchFTextEntry.grid(row=0, column=7)
 
-
+        # audio spectrum display
         pane2 = PanedWindow(master=self.master)
         pane2.grid(row=1, column=0, sticky=NSEW)
         self.fig = Figure(figsize=(14, 8), dpi=80, facecolor='w', edgecolor='k')
@@ -81,22 +82,25 @@ class mainWin:
         self.ax.set_ylabel('Magnitude', alpha=0.5)
 
     def startBtnCallBack(self):
+        if self.soundDetectModule.switchButton:
+            print("already started, please stop first")
+            return
+
         print("Start!")
-        self.soundDetectModule = SoundDetector()
         self.soundDetectModule.start()
-        self.bgthread = threading.Thread(target=self.processAudio)
+        self.bgthread = threading.Thread(target=self.soundDetectModule.listen, args = (TimeWindow,self))
         self.bgthread.start()
 
     def stopBtnCallBack(self):
         print("Stop!")
+        self.soundDetectModule.stop()
         if self.bgthread is not None:
-            self.bgthread.join()
-        if self.soundDetectModule is not None:
-            self.soundDetectModule.stop()
-            self.soundDetectModule = None
+            self.bgthread.join(timeout=1.0)
+            print("bgthread terminates")
 
     def exitBtnCallBack(self):
         print("exit")
+        self.stopBtnCallBack()
         self.master.quit()
 
     def audioSettingBtnCallBack(self):
@@ -106,18 +110,21 @@ class mainWin:
         print("display setting")
 
     def processAudio(self):
-        if self.soundDetectModule is not None:
-            self.soundDetectModule.listen(TimeWindow, self)
+        self.soundDetectModule.listen(TimeWindow, self)
 
     def updateUI(self, freqData, freqPower):
+        if not self.soundDetectModule.switchButton:
+            print("stopped, no update")
+            return
+
         updateFlag = False if (freqPower < THRESHOLD) else True
-        powerMsg = "No Detection" if not updateFlag else str(freqPower)
+        powerMsg = self.noDetect if not updateFlag else str(freqPower)
         clen = len(freqData)
         cminIdx = 0 if (clen < FREQ_RANGE[0]) else FREQ_RANGE[0]
         cmaxIdx = FREQ_RANGE[1] if (clen > FREQ_RANGE[1]) else clen
         freqDataTrim = freqData[cminIdx:cmaxIdx]
         maxFreq = np.argmax(freqDataTrim) + cminIdx
-        freqMsg = "No Detection" if not updateFlag else str(maxFreq)
+        freqMsg = self.noDetect if not updateFlag else str(maxFreq)
         print("UI: Power = " + powerMsg + ", maxFreq = " + str(maxFreq))
         self.volumeTextVar.set(powerMsg)
         self.freqTextVar.set(freqMsg)

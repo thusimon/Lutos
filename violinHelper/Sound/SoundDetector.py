@@ -34,16 +34,15 @@ class SoundDetector:
         while self.switchButton:
             freqData = self.getFreqDomain(N)
             freqPower = self.freqAnalyer.fftEnergy(freqData)
-            '''
-            powerMsg = "noise" if (freqPower < THRESHOLD) else str(freqPower)
-            clen = len(freqData)
-            cminIdx = 0 if (clen < FREQ_RANGE[0]) else FREQ_RANGE[0]
-            cmaxIdx = FREQ_RANGE[1] if (clen > FREQ_RANGE[1]) else clen
-            freqDataTrim = freqData[cminIdx:cmaxIdx]
-            maxFreq = np.argmax(freqDataTrim) + cminIdx
-            print("Power = " + powerMsg + ", maxFreq = " + str(maxFreq))
-            '''
             win.updateUI(freqData, freqPower)
+
+        if self.audiostream is not None:
+            self.audiostream.stop_stream()
+            self.audiostream.close()
+            self.audiostream = None
+        if self.audio is not None:
+            self.audio.terminate()
+            self.audio = None
 
 
     def start(self):
@@ -55,13 +54,6 @@ class SoundDetector:
     def stop(self):
         print("Sound detector stops")
         self.switchButton = False
-        if self.audiostream is not None:
-            self.audiostream.stop_stream()
-            self.audiostream.close()
-            self.audiostream = None
-        if self.audio is not None:
-            self.audio.terminate()
-            self.audio = None
 
 '''
 if __name__ == "__main__":
