@@ -2,20 +2,11 @@ import pyaudio
 import numpy as np
 from Sound.SoundAnalysis import FrequencyAnalysis
 
-CHUNK = 2048 # The size of the chunk to read from the mic stream
-FORMAT = pyaudio.paInt16 # The format depends on the mic used
-CHANNELS = 1 # The number of channels used to record the audio. Depends on the mic
-RATE = 44100 # The sample rate for audio. Depends on the mic
-START = 0
-
-FREQ_RANGE = [140, 900]
-
-
 class SoundDetector:
-    switchButton = False
-
-    def __init__(self):
+    def __init__(self, settings):
         self.name = "SoundDetector"
+        self.switchButton = False
+        self.settings = settings
         self.audio = None
         self.audiostream = None
         self.freqAnalyer = FrequencyAnalysis()
@@ -29,8 +20,8 @@ class SoundDetector:
         smooth_audio_data = self.freqAnalyer.windowSmoothing(audio_data, "hamming")
         return self.freqAnalyer.fftSpecturm(smooth_audio_data)
 
-    def listen(self, timewin, win):
-        N = RATE * timewin
+    def listen(self, win):
+        N = self.settings.RATE * self.settings.TIMEWIN
         while self.switchButton:
             freqData = self.getFreqDomain(N)
             freqPower = self.freqAnalyer.fftEnergy(freqData)
@@ -49,15 +40,11 @@ class SoundDetector:
         print("Sound detector starts")
         self.switchButton = True
         self.audio = pyaudio.PyAudio()
-        self.audiostream = self.audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+        self.audiostream = self.audio.open(format=self.settings.FORMAT, channels=self.settings.CHANNELS, rate=self.settings.RATE, input=True, frames_per_buffer=self.settings.CHUNK)
 
     def stop(self):
         print("Sound detector stops")
         self.switchButton = False
 
-'''
-if __name__ == "__main__":
-    mySound = SoundDetector()
-    mySound.start();
-    mySound.listen(1, None)
-'''
+    def updateSettings(self, settings):
+        self.settings = settings

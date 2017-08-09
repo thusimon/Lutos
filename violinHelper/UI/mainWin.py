@@ -7,16 +7,15 @@ import tkinter.font as tkFont
 import threading
 from Sound.SoundDetector import *
 from Sound.FreqTable import *
-
-TimeWindow = 1
-THRESHOLD = 400 # The threshold intensity that defines silence.
-TOLERANCE = 5
+from UI.settings import *
+from UI.settingDiag import *
 
 class mainWin:
-
     def __init__(self, master):
         self.master = master
-        self.soundDetectModule = SoundDetector()
+        self.audioSetting = AudioSettings()
+        self.displaySetting = DisplaySettings()
+        self.soundDetectModule = SoundDetector(self.audioSetting)
         self.bgthread = None
         self.pitches = FreqTable()
         self.noDetect = "--"
@@ -24,6 +23,7 @@ class mainWin:
         master.geometry('%dx%d+%d+%d' % (1200, 700, 100, 100))
         master.resizable(width=FALSE, height=FALSE)
         self.master.protocol("WM_DELETE_WINDOW", self.exitBtnCallBack)
+        SettingDiag.root = self.master
         self.create_widgets()
 
     def create_widgets(self):
@@ -39,9 +39,8 @@ class mainWin:
         menubar.add_cascade(label="Action", menu=actionMenu)
 
         settingMenu = Menu(menubar, tearoff=0)
-        settingMenu.add_command(label="Audio", command=self.audioSettingBtnCallBack)
-        settingMenu.add_command(label="Display", command=self.displaySettingBtnCallBack)
-        menubar.add_cascade(label="Settings", menu=settingMenu)
+        settingMenu.add_command(label="Settings", command=self.settingBtnCallBack)
+        menubar.add_cascade(label="Preference", menu=settingMenu)
 
         self.master.config(menu=menubar)
 
@@ -75,11 +74,10 @@ class mainWin:
         self.fig = Figure(figsize=(14, 8), dpi=80, facecolor='w', edgecolor='k')
         self.fig.text(0.5,0.9,"Audio Spectrum")
         self.canvas = FigureCanvasTkAgg(self.fig, master=pane2)
-        self.canvas.show()
         self.canvas.get_tk_widget().grid(row=0,column=0, sticky=NSEW)
         self.ax = self.fig.add_subplot(111)
-        self.ax.set_xlabel('Hz', alpha=0.5)
-        self.ax.set_ylabel('Magnitude', alpha=0.5)
+        self.resetCanvas()
+        self.canvas.show()
 
     def startBtnCallBack(self):
         if self.soundDetectModule.switchButton:
@@ -88,12 +86,13 @@ class mainWin:
 
         print("Start!")
         self.soundDetectModule.start()
-        self.bgthread = threading.Thread(target=self.soundDetectModule.listen, args = (TimeWindow,self))
+        self.bgthread = threading.Thread(target=self.soundDetectModule.listen, args = (self,))
         self.bgthread.start()
 
     def stopBtnCallBack(self):
         print("Stop!")
         self.soundDetectModule.stop()
+        self.resetCanvas()
         if self.bgthread is not None:
             self.bgthread.join(timeout=1.0)
             print("bgthread terminates")
@@ -103,25 +102,21 @@ class mainWin:
         self.stopBtnCallBack()
         self.master.quit()
 
-    def audioSettingBtnCallBack(self):
-        print("audio setting")
-
-    def displaySettingBtnCallBack(self):
-        print("display setting")
-
-    def processAudio(self):
-        self.soundDetectModule.listen(TimeWindow, self)
+    def settingBtnCallBack(self):
+        print("settings")
+        D = {'user': 'Bob'}
+        SettingDiag('Name?', (D, 'user'))
 
     def updateUI(self, freqData, freqPower):
         if not self.soundDetectModule.switchButton:
             print("stopped, no update")
             return
 
-        updateFlag = False if (freqPower < THRESHOLD) else True
+        updateFlag = False if (freqPower < self.displaySetting.THRESHOLD) else True
         powerMsg = self.noDetect if not updateFlag else str(freqPower)
         clen = len(freqData)
-        cminIdx = 0 if (clen < FREQ_RANGE[0]) else FREQ_RANGE[0]
-        cmaxIdx = FREQ_RANGE[1] if (clen > FREQ_RANGE[1]) else clen
+        cminIdx = 0 if (clen < self.displaySetting.FREQ_RANGE[0]) else self.displaySetting.FREQ_RANGE[0]
+        cmaxIdx = self.displaySetting.FREQ_RANGE[1] if (clen > self.displaySetting.FREQ_RANGE[1]) else clen
         freqDataTrim = freqData[cminIdx:cmaxIdx]
         maxFreq = np.argmax(freqDataTrim) + cminIdx
         freqMsg = self.noDetect if not updateFlag else str(maxFreq)
@@ -134,6 +129,16 @@ class mainWin:
     def updateCanvas(self, freqX, freqY):
         self.ax.cla()
         self.ax.plot(freqX, freqY)
+        self.ax.set_xlabel('Hz', alpha=0.5)
+        self.ax.set_ylabel('Magnitude', alpha=0.5)
+        self.canvas.draw()
+
+    def resetCanvas(self):
+        self.ax.cla()
+        self.ax.set_xlabel('Hz', alpha=0.5)
+        self.ax.set_xbound(lower=0, upper=1)
+        self.ax.set_ylabel('Magnitude', alpha=0.5)
+        self.ax.set_ybound(lower=0, upper=1)
         self.canvas.draw()
 
     def updateNotes(self,updateFlag, maxFreq):
@@ -143,7 +148,7 @@ class mainWin:
             self.pitchNTextEntry.configure(bg="white")
         else:
             for key, value in self.pitches.freqTable.items():
-                if abs(value-maxFreq) <= TOLERANCE:
+                if abs(value-maxFreq) <= self.displaySetting.TOLERANCE:
                     #found the note
                     self.pitchFTextVar.set(str(value))
                     self.pitchNTextVar.set(str(key))
