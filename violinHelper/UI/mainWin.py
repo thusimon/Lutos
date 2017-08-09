@@ -10,17 +10,24 @@ from Sound.FreqTable import *
 from UI.settings import *
 from UI.settingDiag import *
 
+MAINWIN_WIDTH = 1200
+MAINWIN_HEIGHT = 700
+
 class mainWin:
     def __init__(self, master):
         self.master = master
-        self.audioSetting = AudioSettings()
-        self.displaySetting = DisplaySettings()
-        self.soundDetectModule = SoundDetector(self.audioSetting)
+        self.Setting = Settings()
+        self.soundDetectModule = SoundDetector(self.Setting)
         self.bgthread = None
         self.pitches = FreqTable()
         self.noDetect = "--"
         master.title("Audio Frequency analysis")
-        master.geometry('%dx%d+%d+%d' % (1200, 700, 100, 100))
+        w = master .winfo_screenwidth()
+        h = master .winfo_screenheight()
+        size = (MAINWIN_WIDTH, MAINWIN_HEIGHT)
+        x = w / 2 - size[0] / 2
+        y = h / 2 - size[1] / 2
+        master.geometry("%dx%d+%d+%d" % (size + (x, y)))
         master.resizable(width=FALSE, height=FALSE)
         self.master.protocol("WM_DELETE_WINDOW", self.exitBtnCallBack)
         SettingDiag.root = self.master
@@ -104,19 +111,19 @@ class mainWin:
 
     def settingBtnCallBack(self):
         print("settings")
-        D = {'user': 'Bob'}
-        SettingDiag('Name?', (D, 'user'))
+        print(self.Setting.TOLERANCE)
+        SettingDiag(self.Setting)
 
     def updateUI(self, freqData, freqPower):
         if not self.soundDetectModule.switchButton:
             print("stopped, no update")
             return
 
-        updateFlag = False if (freqPower < self.displaySetting.THRESHOLD) else True
+        updateFlag = False if (freqPower < self.Setting.THRESHOLD) else True
         powerMsg = self.noDetect if not updateFlag else str(freqPower)
         clen = len(freqData)
-        cminIdx = 0 if (clen < self.displaySetting.FREQ_RANGE[0]) else self.displaySetting.FREQ_RANGE[0]
-        cmaxIdx = self.displaySetting.FREQ_RANGE[1] if (clen > self.displaySetting.FREQ_RANGE[1]) else clen
+        cminIdx = 0 if (clen < self.Setting.FREQ_RANGE[0]) else self.Setting.FREQ_RANGE[0]
+        cmaxIdx = self.Setting.FREQ_RANGE[1] if (clen > self.Setting.FREQ_RANGE[1]) else clen
         freqDataTrim = freqData[cminIdx:cmaxIdx]
         maxFreq = np.argmax(freqDataTrim) + cminIdx
         freqMsg = self.noDetect if not updateFlag else str(maxFreq)
@@ -148,7 +155,7 @@ class mainWin:
             self.pitchNTextEntry.configure(bg="white")
         else:
             for key, value in self.pitches.freqTable.items():
-                if abs(value-maxFreq) <= self.displaySetting.TOLERANCE:
+                if abs(value-maxFreq) <= self.Setting.TOLERANCE:
                     #found the note
                     self.pitchFTextVar.set(str(value))
                     self.pitchNTextVar.set(str(key))
