@@ -1,6 +1,6 @@
 import numpy as np
 
-class FrequencyAnalysis:
+class SoundAnalysis:
     def __init__(self):
         self.name = "FrequencyAnalysis"
 
@@ -17,7 +17,7 @@ class FrequencyAnalysis:
             window = np.hanning(inputLen)
         return input * window
 
-    def fftSpecturm(self, input):
+    def fft(self, input):
         #real time fft
         rfftRes = np.fft.rfft(input)
         n = len(rfftRes)
@@ -30,3 +30,7 @@ class FrequencyAnalysis:
     def fftEnergy(self, fftSpectrum):
         return np.sqrt(np.sum(np.absolute(fftSpectrum)**2))
 
+    def getFreqSpectrum(self, data, windowType):
+        #return FrequencyAnalysis.rfft(audio_data)
+        smooth_audio_data = self.windowSmoothing(data, windowType)
+        return self.fft(smooth_audio_data)

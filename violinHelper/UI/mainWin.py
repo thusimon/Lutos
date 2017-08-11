@@ -5,7 +5,9 @@ from matplotlib.figure import Figure
 from tkinter import *
 import tkinter.font as tkFont
 import threading
+from time import sleep
 from Sound.SoundDetector import *
+from Sound.SoundAnalysis import *
 from Sound.FreqTable import *
 from UI.settings import *
 from UI.settingDiag import *
@@ -18,7 +20,9 @@ class mainWin:
         self.master = master
         self.Setting = Settings()
         self.soundDetectModule = SoundDetector(self.Setting)
-        self.bgthread = None
+        self.soundAnalysisModule = SoundAnalysis()
+        self.importAudioDataThread = None
+        self.updateUIThread = None
         self.pitches = FreqTable()
         self.noDetect = "--"
         master.title("Audio Frequency analysis")
@@ -93,15 +97,19 @@ class mainWin:
 
         print("Start!")
         self.soundDetectModule.start()
-        self.bgthread = threading.Thread(target=self.soundDetectModule.listen, args = (self,))
-        self.bgthread.start()
+        self.importAudioDataThread = threading.Thread(target=self.soundDetectModule.importAudioData)
+        self.importAudioDataThread.start()
+        self.updateUI()
 
     def stopBtnCallBack(self):
         print("Stop!")
         self.soundDetectModule.stop()
         self.resetCanvas()
-        if self.bgthread is not None:
-            self.bgthread.join(timeout=1.0)
+        if self.updateUIThread is not None:
+            self.updateUIThread.cancel()
+
+        if self.importAudioDataThread is not None:
+            self.importAudioDataThread.join(timeout=1.0)
             print("bgthread terminates")
 
     def exitBtnCallBack(self):
@@ -114,11 +122,22 @@ class mainWin:
         print(self.Setting.TOLERANCE)
         SettingDiag(self.Setting)
 
-    def updateUI(self, freqData, freqPower):
+    def updateUI(self):
         if not self.soundDetectModule.switchButton:
             print("stopped, no update")
             return
 
+        self.updateUIThread = threading.Timer(self.Setting.TIMEWIN / 1000, self.updateUI)
+        self.updateUIThread.start()
+
+        audioBuffer = self.soundDetectModule.buffer.data
+        audioData = audioBuffer[-self.Setting.PROCESS_DATALEN:]
+        if len(audioData)<self.Setting.CHUNK:
+            print("not enough data, return and wait for the next call")
+            return
+
+        freqData = self.soundAnalysisModule.getFreqSpectrum(audioData, self.Setting.SMOOTHING)
+        freqPower = self.soundAnalysisModule.fftEnergy(freqData)
         updateFlag = False if (freqPower < self.Setting.THRESHOLD) else True
         powerMsg = self.noDetect if not updateFlag else str(freqPower)
         clen = len(freqData)
@@ -132,6 +151,7 @@ class mainWin:
         self.freqTextVar.set(freqMsg)
         self.updateCanvas(range(cminIdx,cmaxIdx),freqDataTrim)
         self.updateNotes(updateFlag, maxFreq)
+
 
     def updateCanvas(self, freqX, freqY):
         self.ax.cla()

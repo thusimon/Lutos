@@ -30,7 +30,7 @@ class SettingDiag:
 
         Label(self.frm, text="Time Window(ms): ").grid(row=0, column=2, padx=5)
         self.timeWinTextVar = StringVar()
-        self.timeWinTextVar.set(settings.TIMEWIN*1000)
+        self.timeWinTextVar.set(settings.TIMEWIN)
         Entry(self.frm, width=8, textvariable=self.timeWinTextVar).grid(row=0, column=3, padx=5, sticky=W)
 
         Label(self.frm, text="Window Smooth: ").grid(row=1, column=0, padx=5, sticky=W)
@@ -66,7 +66,7 @@ class SettingDiag:
         print("setting: clicked save")
         #save the settings
         self.settings.RATE = int(self.rateTextVar.get())
-        self.settings.TIMEWIN = float(self.timeWinTextVar.get())/1000
+        self.settings.TIMEWIN = float(self.timeWinTextVar.get())
         self.settings.SMOOTHING = self.winTypeCombo.get()
         self.settings.THRESHOLD = int(self.thresholdTextVar.get())
         self.settings.TOLERANCE = int(self.toleranceTextVar.get())
