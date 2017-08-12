@@ -1,11 +1,9 @@
 import matplotlib
 matplotlib.use("TkAgg")
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-from tkinter import *
 import tkinter.font as tkFont
 import threading
-from time import sleep
 from Sound.SoundDetector import *
 from Sound.SoundAnalysis import *
 from Sound.FreqTable import *
