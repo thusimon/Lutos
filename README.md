@@ -1,4 +1,4 @@
-# pythonPersonal
+# Lutos
 violinHelper can help you to tune your string or your pitches.
 Need to insall pyaudio and matplotlib
 
